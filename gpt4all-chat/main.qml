@@ -637,6 +637,9 @@ Window {
                 function onAddModelViewRequested() {
                     addModelView.show();
                 }
+                function onModelsViewRequested() {
+                    modelsView.show();
+                }
                 function onSettingsViewRequested(page) {
                     settingsView.show(page);
                 }
@@ -720,7 +723,14 @@ Window {
             Layout.fillHeight: true
 
             function show(page) {
-                settingsView.pageToDisplay = page;
+                let targetPage = page
+                const totalPages = settingsView.totalPages
+                if (typeof targetPage !== "number" || !isFinite(targetPage))
+                    targetPage = 0
+                targetPage = Math.max(0, Math.floor(targetPage))
+                if (typeof totalPages === "number" && totalPages > 0)
+                    targetPage = Math.min(targetPage, totalPages - 1)
+                settingsView.pageToDisplay = targetPage
                 stackLayout.currentIndex = 4;
             }
 

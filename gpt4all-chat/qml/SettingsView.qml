@@ -16,6 +16,7 @@ Rectangle {
     color: theme.viewBackground
 
     property alias pageToDisplay: listView.currentIndex
+    readonly property int totalPages: stacksModel.count
 
     Item {
         Accessible.role: Accessible.Dialog
