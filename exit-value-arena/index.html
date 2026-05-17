@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Exit Value Arena</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main id="app" aria-label="Exit Value Arena first-person benchmark shooter">
+    <section id="menu" class="panel hero-panel">
+      <div class="eyebrow">Venture-backed benchmark shooter</div>
+      <h1>Exit Value Arena</h1>
+      <p class="tagline">A neon first-person satire where founders blast term sheets, dodge hallucination beams, and beat AI bosses by solving benchmark-inspired puzzles.</p>
+
+      <div class="notice">
+        <strong>Original challenge set:</strong> the boss questions are synthetic, benchmark-inspired prompts modeled after public benchmark categories such as math olympiad reasoning, graduate science, coding repair, instruction following, and live reasoning. They are not copied from private or live benchmark datasets.
+      </div>
+
+      <h2>Choose your founder avatar</h2>
+      <div id="characterGrid" class="character-grid"></div>
+
+      <div class="menu-actions">
+        <button id="startButton" class="primary">Launch the IPO Cannon</button>
+        <button id="howButton" class="secondary">How to play</button>
+      </div>
+
+      <details id="howTo" class="howto">
+        <summary>Controls and rules</summary>
+        <ul>
+          <li><kbd>WASD</kbd> or arrow keys move through the valuation maze.</li>
+          <li>Move the mouse to aim; click or press <kbd>Space</kbd> to fire.</li>
+          <li>Reduce a boss shield to trigger a benchmark duel.</li>
+          <li>Correct answers increase exit value and damage the boss. Wrong answers give the boss runway.</li>
+          <li>Beat Googol, Microhard, Cloudopus, and Kimi K2 to unlock the Joe Rogan bonus run.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section id="gameShell" class="game-shell hidden" aria-live="polite">
+      <canvas id="game" width="1280" height="720" aria-label="First-person arena canvas"></canvas>
+      <div class="hud top-left">
+        <div id="heroName" class="hud-title"></div>
+        <div>Exit Value: <strong id="score">$0.0B</strong></div>
+        <div>Runway: <strong id="health">100%</strong></div>
+        <div>Ammo: <strong id="ammo">30</strong></div>
+      </div>
+      <div class="hud top-right">
+        <div id="bossName" class="hud-title"></div>
+        <div>Boss Shield: <strong id="bossHp">100%</strong></div>
+        <div>Benchmark: <strong id="benchmarkName">MMLU-Pro-ish</strong></div>
+      </div>
+      <div id="toast" class="toast">Click the arena to capture aim.</div>
+      <div id="crosshair" class="crosshair" aria-hidden="true"></div>
+    </section>
+
+    <section id="quizModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="quizTitle">
+      <div class="modal-card">
+        <div class="eyebrow" id="quizBenchmark"></div>
+        <h2 id="quizTitle"></h2>
+        <p id="quizPrompt"></p>
+        <div id="answers" class="answers"></div>
+        <p id="quizFeedback" class="feedback"></p>
+      </div>
+    </section>
+
+    <section id="victory" class="panel victory hidden">
+      <div class="eyebrow">Liquidity event complete</div>
+      <h1 id="victoryTitle">You beat the benchmark stack.</h1>
+      <p id="victoryText"></p>
+      <button id="againButton" class="primary">Replay with a different founder</button>
+    </section>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>

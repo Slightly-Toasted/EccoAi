@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Exit Value Arena - Standalone</title>
+  <style>
+:root {
+  color-scheme: dark;
+  --bg: #070914;
+  --bg2: #101834;
+  --cyan: #53f5ff;
+  --pink: #ff4fd8;
+  --gold: #ffd166;
+  --lime: #9dff72;
+  --text: #f5f7ff;
+  --muted: #aeb7d9;
+  --danger: #ff5b6e;
+  --panel: rgba(8, 12, 32, 0.78);
+  --line: rgba(255, 255, 255, 0.18);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 79, 216, 0.28), transparent 28rem),
+    radial-gradient(circle at 82% 8%, rgba(83, 245, 255, 0.24), transparent 24rem),
+    linear-gradient(135deg, #050612 0%, #111a3a 48%, #130520 100%);
+  overflow: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(to bottom, transparent, #000 15%, #000 85%, transparent);
+}
+
+.hidden { display: none !important; }
+.panel {
+  width: min(1120px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  margin: 16px auto;
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: var(--panel);
+  box-shadow: 0 30px 90px rgba(0,0,0,.45), inset 0 0 80px rgba(83,245,255,.06);
+  backdrop-filter: blur(18px);
+}
+.hero-panel h1, .victory h1 {
+  margin: 6px 0 12px;
+  font-size: clamp(3rem, 9vw, 7rem);
+  line-height: .85;
+  letter-spacing: -.08em;
+  text-shadow: 0 0 22px rgba(83,245,255,.6), 0 0 55px rgba(255,79,216,.35);
+}
+.tagline { max-width: 820px; color: var(--muted); font-size: 1.15rem; }
+.eyebrow { color: var(--cyan); text-transform: uppercase; letter-spacing: .2em; font-size: .78rem; font-weight: 800; }
+.notice {
+  margin: 22px 0;
+  padding: 16px 18px;
+  border: 1px solid rgba(83,245,255,.32);
+  border-radius: 18px;
+  background: rgba(83,245,255,.08);
+  color: #dffcff;
+}
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 18px 0 24px;
+}
+.character-card {
+  min-height: 230px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: linear-gradient(160deg, rgba(255,255,255,.1), rgba(255,255,255,.02));
+  cursor: pointer;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  position: relative;
+  overflow: hidden;
+}
+.character-card::after {
+  content: "";
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  right: -45px;
+  bottom: -45px;
+  background: radial-gradient(circle, var(--accent), transparent 70%);
+  opacity: .35;
+}
+.character-card:hover, .character-card.selected { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 0 35px color-mix(in srgb, var(--accent), transparent 65%); }
+.character-card.locked { opacity: .54; cursor: not-allowed; filter: grayscale(.4); }
+.avatar { font-size: 3rem; filter: drop-shadow(0 0 18px var(--accent)); }
+.character-card h3 { margin: 8px 0 5px; }
+.character-card p { color: var(--muted); margin: 0 0 10px; }
+.stat { display: flex; justify-content: space-between; color: #e8ebff; font-size: .9rem; border-top: 1px solid rgba(255,255,255,.1); padding-top: 8px; }
+.menu-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 13px 20px;
+  color: #07101e;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(0,0,0,.22);
+}
+.primary { background: linear-gradient(135deg, var(--cyan), var(--pink)); }
+.secondary { background: rgba(255,255,255,.12); color: var(--text); border: 1px solid var(--line); }
+kbd { padding: 2px 7px; border-radius: 6px; background: rgba(255,255,255,.14); border: 1px solid var(--line); }
+.howto { margin-top: 16px; color: var(--muted); }
+.game-shell { position: fixed; inset: 0; background: #050610; }
+canvas { width: 100vw; height: 100vh; display: block; cursor: crosshair; }
+.hud {
+  position: fixed;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(5,8,20,.7);
+  backdrop-filter: blur(12px);
+  color: var(--muted);
+  min-width: 210px;
+}
+.hud strong { color: var(--text); }
+.hud-title { color: var(--cyan); font-weight: 900; margin-bottom: 5px; }
+.top-left { top: 18px; left: 18px; }
+.top-right { top: 18px; right: 18px; }
+.crosshair {
+  position: fixed;
+  left: 50%; top: 50%;
+  width: 24px; height: 24px;
+  margin: -12px 0 0 -12px;
+  border: 2px solid rgba(255,255,255,.9);
+  border-radius: 50%;
+  box-shadow: 0 0 18px var(--cyan), inset 0 0 12px var(--pink);
+  pointer-events: none;
+}
+.crosshair::before, .crosshair::after { content:""; position:absolute; background:rgba(255,255,255,.9); }
+.crosshair::before { width: 34px; height: 2px; left: -7px; top: 9px; }
+.crosshair::after { height: 34px; width: 2px; left: 9px; top: -7px; }
+.toast {
+  position: fixed;
+  left: 50%; bottom: 28px;
+  transform: translateX(-50%);
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.65);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+.modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.62);
+  backdrop-filter: blur(6px);
+}
+.modal-card {
+  width: min(820px, calc(100vw - 32px));
+  padding: 28px;
+  border-radius: 28px;
+  border: 1px solid rgba(83,245,255,.36);
+  background: linear-gradient(145deg, rgba(9,14,38,.96), rgba(30,8,42,.96));
+  box-shadow: 0 30px 90px rgba(0,0,0,.55), 0 0 55px rgba(83,245,255,.15);
+}
+.modal-card h2 { margin: 6px 0 12px; font-size: clamp(1.5rem, 4vw, 2.8rem); }
+.answers { display: grid; gap: 12px; margin-top: 18px; }
+.answer {
+  width: 100%;
+  text-align: left;
+  color: var(--text);
+  background: rgba(255,255,255,.08);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.answer:hover { border-color: var(--cyan); }
+.feedback { min-height: 1.5em; color: var(--gold); font-weight: 800; }
+.victory { text-align: center; }
+@media (max-width: 850px) {
+  .character-grid { grid-template-columns: 1fr; }
+  .hud { transform: scale(.84); transform-origin: top left; }
+  .top-right { transform-origin: top right; }
+}
+
+  </style>
+</head>
+<body>
+  <main id="app" aria-label="Exit Value Arena first-person benchmark shooter">
+    <section id="menu" class="panel hero-panel">
+      <div class="eyebrow">Venture-backed benchmark shooter</div>
+      <h1>Exit Value Arena</h1>
+      <p class="tagline">A neon first-person satire where founders blast term sheets, dodge hallucination beams, and beat AI bosses by solving benchmark-inspired puzzles.</p>
+
+      <div class="notice">
+        <strong>Original challenge set:</strong> the boss questions are synthetic, benchmark-inspired prompts modeled after public benchmark categories such as math olympiad reasoning, graduate science, coding repair, instruction following, and live reasoning. They are not copied from private or live benchmark datasets.
+      </div>
+
+      <h2>Choose your founder avatar</h2>
+      <div id="characterGrid" class="character-grid"></div>
+
+      <div class="menu-actions">
+        <button id="startButton" class="primary">Launch the IPO Cannon</button>
+        <button id="howButton" class="secondary">How to play</button>
+      </div>
+
+      <details id="howTo" class="howto">
+        <summary>Controls and rules</summary>
+        <ul>
+          <li><kbd>WASD</kbd> or arrow keys move through the valuation maze.</li>
+          <li>Move the mouse to aim; click or press <kbd>Space</kbd> to fire.</li>
+          <li>Reduce a boss shield to trigger a benchmark duel.</li>
+          <li>Correct answers increase exit value and damage the boss. Wrong answers give the boss runway.</li>
+          <li>Beat Googol, Microhard, Cloudopus, and Kimi K2 to unlock the Joe Rogan bonus run.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section id="gameShell" class="game-shell hidden" aria-live="polite">
+      <canvas id="game" width="1280" height="720" aria-label="First-person arena canvas"></canvas>
+      <div class="hud top-left">
+        <div id="heroName" class="hud-title"></div>
+        <div>Exit Value: <strong id="score">$0.0B</strong></div>
+        <div>Runway: <strong id="health">100%</strong></div>
+        <div>Ammo: <strong id="ammo">30</strong></div>
+      </div>
+      <div class="hud top-right">
+        <div id="bossName" class="hud-title"></div>
+        <div>Boss Shield: <strong id="bossHp">100%</strong></div>
+        <div>Benchmark: <strong id="benchmarkName">MMLU-Pro-ish</strong></div>
+      </div>
+      <div id="toast" class="toast">Click the arena to capture aim.</div>
+      <div id="crosshair" class="crosshair" aria-hidden="true"></div>
+    </section>
+
+    <section id="quizModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="quizTitle">
+      <div class="modal-card">
+        <div class="eyebrow" id="quizBenchmark"></div>
+        <h2 id="quizTitle"></h2>
+        <p id="quizPrompt"></p>
+        <div id="answers" class="answers"></div>
+        <p id="quizFeedback" class="feedback"></p>
+      </div>
+    </section>
+
+    <section id="victory" class="panel victory hidden">
+      <div class="eyebrow">Liquidity event complete</div>
+      <h1 id="victoryTitle">You beat the benchmark stack.</h1>
+      <p id="victoryText"></p>
+      <button id="againButton" class="primary">Replay with a different founder</button>
+    </section>
+  </main>
+  <script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+const menu = document.getElementById('menu');
+const gameShell = document.getElementById('gameShell');
+const quizModal = document.getElementById('quizModal');
+const victory = document.getElementById('victory');
+const characterGrid = document.getElementById('characterGrid');
+const howButton = document.getElementById('howButton');
+const howTo = document.getElementById('howTo');
+
+const hud = {
+  heroName: document.getElementById('heroName'),
+  score: document.getElementById('score'),
+  health: document.getElementById('health'),
+  ammo: document.getElementById('ammo'),
+  bossName: document.getElementById('bossName'),
+  bossHp: document.getElementById('bossHp'),
+  benchmarkName: document.getElementById('benchmarkName'),
+  toast: document.getElementById('toast'),
+};
+
+const quizEls = {
+  benchmark: document.getElementById('quizBenchmark'),
+  title: document.getElementById('quizTitle'),
+  prompt: document.getElementById('quizPrompt'),
+  answers: document.getElementById('answers'),
+  feedback: document.getElementById('quizFeedback'),
+};
+
+const heroes = [
+  {
+    id: 'zuck', name: 'Mark Zuckercode', emoji: '🕶️', accent: '#53f5ff',
+    blurb: 'Ships social graph shurikens and quietly copies the boss mechanics better than the boss.',
+    weapon: 'Metaverse Rail-Pitch', speed: 3.2, accuracy: 1.08, value: 220,
+  },
+  {
+    id: 'elon', name: 'Elon Musket', emoji: '🚀', accent: '#ffd166',
+    blurb: 'Fires reusable rockets of hype. Sometimes the reload is a tweetstorm.',
+    weapon: 'X-Terminator Blaster', speed: 3.7, accuracy: 0.94, value: 260,
+  },
+  {
+    id: 'sam', name: 'Sam Altmanifold', emoji: '🧠', accent: '#9dff72',
+    blurb: 'Turns alignment memos into laser shields and negotiates with the final boss mid-fight.',
+    weapon: 'AGI SAFE-ty Shotgun', speed: 3.0, accuracy: 1.18, value: 300,
+  },
+  {
+    id: 'joe', name: 'Joe Rogun', emoji: '🎙️', accent: '#ff4fd8', locked: true,
+    blurb: 'Bonus unlock. Asks the boss if it has tried elk meat, sauna, and a 14-hour podcast.',
+    weapon: 'Podcast Shockwave', speed: 3.5, accuracy: 1.0, value: 420,
+  },
+];
+
+const quizBank = [
+  {
+    benchmark: 'AIME-style math',
+    title: 'Runway Arithmetic',
+    prompt: 'A startup burns $7M per quarter. Revenue starts at $2M in quarter 1 and grows by $1M each quarter. What is cumulative net burn after 4 quarters?',
+    answers: ['$10M', '$12M', '$14M', '$16M'], correct: 2,
+    explain: 'Burn is 7×4 = 28. Revenue is 2+3+4+5 = 14. Net burn is 28 - 14 = $14M.',
+  },
+  {
+    benchmark: 'GPQA-style science',
+    title: 'Cooling the GPU Furnace',
+    prompt: 'Which change most directly increases heat transfer from a hot chip to a liquid cold plate, assuming the coolant remains below boiling?',
+    answers: ['Lowering contact pressure', 'Using a thicker insulating pad', 'Increasing thermal interface conductivity', 'Painting the server rack matte black'], correct: 2,
+    explain: 'Higher thermal interface conductivity lowers thermal resistance between chip and cold plate.',
+  },
+  {
+    benchmark: 'LiveCodeBench-style coding',
+    title: 'Patch the Valuation Counter',
+    prompt: 'A function should return true when every character in a string appears the same number of times. Which map check is sufficient?',
+    answers: ['All frequency values are equal', 'The string length is prime', 'The first and last characters match', 'There are more vowels than consonants'], correct: 0,
+    explain: 'Counting characters and verifying one shared frequency solves the requirement.',
+  },
+  {
+    benchmark: 'SWE-bench-style debugging',
+    title: 'Regression in the Demo',
+    prompt: 'A UI button submits twice after a refactor. The handler is attached during every render. What is the best fix?',
+    answers: ['Add more logging only', 'Register the handler once and clean it up on unmount', 'Increase the server timeout', 'Rename the button'], correct: 1,
+    explain: 'Repeated registration creates duplicate listeners; lifecycle cleanup prevents stacked submissions.',
+  },
+  {
+    benchmark: 'MMLU-Pro-style reasoning',
+    title: 'Boardroom Logic',
+    prompt: 'If every profitable product has retention, and no product with retention is being sunset, what follows?',
+    answers: ['Profitable products are not being sunset', 'All sunset products are profitable', 'No products have retention', 'Every retained product is profitable'], correct: 0,
+    explain: 'Profitability implies retention, and retention excludes sunset status.',
+  },
+  {
+    benchmark: 'IFEval-style instruction following',
+    title: 'Investor Update Constraints',
+    prompt: 'You must write exactly two bullet points and include the word "runway" once. Which response obeys?',
+    answers: ['- We grew.\n- Runway improved.', 'Runway improved and we grew.', '- runway runway\n- growth', '- We grew.\n- Margins improved.\n- runway improved.'], correct: 0,
+    explain: 'It has exactly two bullets and uses the target word once, case-insensitively.',
+  },
+  {
+    benchmark: 'ARC-AGI-style pattern',
+    title: 'Grid of Doom',
+    prompt: 'Pattern: red squares move one cell right each step; blue squares stay fixed. What should happen next?',
+    answers: ['Only red squares shift right', 'Only blue squares shift right', 'Everything disappears', 'All squares turn green'], correct: 0,
+    explain: 'The transformation rule applies only to red squares.',
+  },
+  {
+    benchmark: 'LiveBench-style data analysis',
+    title: 'KPI Ambush',
+    prompt: 'A chart shows signups up 20%, activation flat, and churn up 20%. What is the safest conclusion?',
+    answers: ['Growth is unequivocally healthy', 'Acquisition improved, but retention risk needs investigation', 'The product has no users', 'Churn is impossible to measure'], correct: 1,
+    explain: 'More signups do not guarantee healthy growth when churn worsens and activation is flat.',
+  },
+];
+
+const bosses = [
+  { name: 'Googol Goliath', emoji: '🔎', color: '#53f5ff', benchmark: 'MMLU-Pro-ish', hp: 100, x: 520, y: 190, taunt: 'I indexed your pitch deck before you wrote it.' },
+  { name: 'Microhard Azure Dragon', emoji: '🪟', color: '#9dff72', benchmark: 'SWE-bench-ish', hp: 120, x: 820, y: 420, taunt: 'Your enterprise procurement cycle begins now.' },
+  { name: 'Cloudopus', emoji: '🐙', color: '#ff4fd8', benchmark: 'GPQA-ish', hp: 145, x: 340, y: 520, taunt: 'Eight arms. Zero rate limits.' },
+  { name: 'Kimi K2 Benchmark Warlord', emoji: '🐉', color: '#ffd166', benchmark: 'LiveBench-ish', hp: 170, x: 950, y: 160, taunt: 'Dynamic evals. Dynamic doom.' },
+];
+
+const walls = [
+  { x: 120, y: 120, w: 900, h: 24 }, { x: 120, y: 620, w: 900, h: 24 },
+  { x: 120, y: 120, w: 24, h: 524 }, { x: 996, y: 120, w: 24, h: 524 },
+  { x: 300, y: 230, w: 28, h: 260 }, { x: 600, y: 120, w: 28, h: 250 },
+  { x: 742, y: 360, w: 28, h: 260 }, { x: 452, y: 470, w: 310, h: 26 },
+];
+
+let selectedHero = heroes[0];
+let joeUnlocked = localStorage.getItem('exitValueJoeUnlocked') === 'true';
+let player, keys, bullets, particles, activeBossIndex, activeQuestion, score, lastTime, running, pausedForQuiz;
+
+function renderHeroCards() {
+  characterGrid.innerHTML = '';
+  heroes.forEach((hero) => {
+    const locked = hero.id === 'joe' && !joeUnlocked;
+    const card = document.createElement('button');
+    card.className = `character-card ${selectedHero.id === hero.id ? 'selected' : ''} ${locked ? 'locked' : ''}`;
+    card.style.setProperty('--accent', hero.accent);
+    card.innerHTML = `
+      <div class="avatar">${hero.emoji}</div>
+      <h3>${hero.name}</h3>
+      <p>${locked ? 'Locked: beat the four-boss benchmark gauntlet.' : hero.blurb}</p>
+      <div class="stat"><span>Weapon</span><strong>${hero.weapon}</strong></div>
+      <div class="stat"><span>Seed Value</span><strong>$${hero.value}B</strong></div>`;
+    card.addEventListener('click', () => {
+      if (locked) return;
+      selectedHero = hero;
+      renderHeroCards();
+    });
+    characterGrid.appendChild(card);
+  });
+}
+
+function resetGame() {
+  player = { x: 180, y: 180, angle: 0, health: 100, ammo: 30, cooldown: 0 };
+  keys = new Set();
+  bullets = [];
+  particles = [];
+  activeBossIndex = 0;
+  activeQuestion = 0;
+  score = selectedHero.value;
+  bosses.forEach((boss, i) => {
+    boss.currentHp = boss.hp;
+    boss.defeated = false;
+    boss.x += i * 0;
+  });
+  running = true;
+  pausedForQuiz = false;
+  updateHud();
+}
+
+function updateHud() {
+  const boss = bosses[activeBossIndex] || bosses[bosses.length - 1];
+  hud.heroName.textContent = `${selectedHero.emoji} ${selectedHero.name}`;
+  hud.score.textContent = `$${score.toFixed(1)}B`;
+  hud.health.textContent = `${Math.max(0, Math.round(player.health))}%`;
+  hud.ammo.textContent = player.ammo;
+  hud.bossName.textContent = `${boss.emoji} ${boss.name}`;
+  hud.bossHp.textContent = `${Math.max(0, Math.round((boss.currentHp / boss.hp) * 100))}%`;
+  hud.benchmarkName.textContent = boss.benchmark;
+}
+
+function startGame() {
+  resetGame();
+  menu.classList.add('hidden');
+  victory.classList.add('hidden');
+  gameShell.classList.remove('hidden');
+  hud.toast.textContent = `${bosses[0].name}: ${bosses[0].taunt}`;
+  lastTime = performance.now();
+  requestAnimationFrame(loop);
+}
+
+function isBlocked(x, y) {
+  return walls.some((wall) => x > wall.x - 16 && x < wall.x + wall.w + 16 && y > wall.y - 16 && y < wall.y + wall.h + 16);
+}
+
+function update(dt) {
+  if (!running || pausedForQuiz) return;
+  player.cooldown = Math.max(0, player.cooldown - dt);
+  const moveSpeed = selectedHero.speed * dt * 0.11;
+  let dx = 0; let dy = 0;
+  if (keys.has('w') || keys.has('arrowup')) { dx += Math.cos(player.angle) * moveSpeed; dy += Math.sin(player.angle) * moveSpeed; }
+  if (keys.has('s') || keys.has('arrowdown')) { dx -= Math.cos(player.angle) * moveSpeed; dy -= Math.sin(player.angle) * moveSpeed; }
+  if (keys.has('a') || keys.has('arrowleft')) { dx += Math.cos(player.angle - Math.PI / 2) * moveSpeed; dy += Math.sin(player.angle - Math.PI / 2) * moveSpeed; }
+  if (keys.has('d') || keys.has('arrowright')) { dx += Math.cos(player.angle + Math.PI / 2) * moveSpeed; dy += Math.sin(player.angle + Math.PI / 2) * moveSpeed; }
+  if (!isBlocked(player.x + dx, player.y)) player.x += dx;
+  if (!isBlocked(player.x, player.y + dy)) player.y += dy;
+
+  bullets.forEach((bullet) => {
+    bullet.x += Math.cos(bullet.angle) * bullet.speed * dt;
+    bullet.y += Math.sin(bullet.angle) * bullet.speed * dt;
+    bullet.life -= dt;
+  });
+  bullets = bullets.filter((bullet) => bullet.life > 0 && !isBlocked(bullet.x, bullet.y));
+
+  const boss = bosses[activeBossIndex];
+  if (boss && !boss.defeated) {
+    const dist = Math.hypot(boss.x - player.x, boss.y - player.y);
+    if (dist < 520) player.health -= dt * 0.0028 * (activeBossIndex + 1);
+    bullets.forEach((bullet) => {
+      if (!bullet.hit && Math.hypot(boss.x - bullet.x, boss.y - bullet.y) < 42) {
+        bullet.hit = true;
+        bullet.life = 0;
+        boss.currentHp -= 9 * selectedHero.accuracy;
+        score += 0.35;
+        burst(boss.x, boss.y, boss.color, 12);
+        if (boss.currentHp <= boss.hp * 0.58 && !boss.quiz1) openQuiz(boss, 'Series A benchmark gate');
+        if (boss.currentHp <= boss.hp * 0.24 && !boss.quiz2) openQuiz(boss, 'Series B benchmark gate');
+        if (boss.currentHp <= 0) defeatBoss();
+      }
+    });
+  }
+
+  particles.forEach((p) => { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; });
+  particles = particles.filter((p) => p.life > 0);
+
+  if (player.health <= 0) endGame(false);
+  updateHud();
+}
+
+function shoot() {
+  if (!running || pausedForQuiz || player.cooldown > 0) return;
+  if (player.ammo <= 0) {
+    player.ammo = 30;
+    hud.toast.textContent = 'Reloaded with fresh investor enthusiasm.';
+    player.cooldown = 450;
+    return;
+  }
+  player.ammo -= 1;
+  player.cooldown = 115;
+  bullets.push({ x: player.x, y: player.y, angle: player.angle + (Math.random() - 0.5) * 0.035 / selectedHero.accuracy, speed: 0.95, life: 900 });
+  burst(player.x + Math.cos(player.angle) * 25, player.y + Math.sin(player.angle) * 25, selectedHero.accent, 5);
+}
+
+function burst(x, y, color, count) {
+  for (let i = 0; i < count; i += 1) {
+    particles.push({ x, y, color, vx: (Math.random() - .5) * .22, vy: (Math.random() - .5) * .22, life: 350 + Math.random() * 350 });
+  }
+}
+
+function openQuiz(boss, title) {
+  pausedForQuiz = true;
+  if (!boss.quiz1) boss.quiz1 = true; else boss.quiz2 = true;
+  const question = quizBank[activeQuestion % quizBank.length];
+  activeQuestion += 1;
+  quizEls.benchmark.textContent = question.benchmark;
+  quizEls.title.textContent = `${title}: ${boss.name}`;
+  quizEls.prompt.textContent = question.prompt;
+  quizEls.feedback.textContent = '';
+  quizEls.answers.innerHTML = '';
+  question.answers.forEach((answer, index) => {
+    const button = document.createElement('button');
+    button.className = 'answer';
+    button.textContent = `${String.fromCharCode(65 + index)}. ${answer}`;
+    button.addEventListener('click', () => resolveQuiz(question, index));
+    quizEls.answers.appendChild(button);
+  });
+  quizModal.classList.remove('hidden');
+}
+
+function resolveQuiz(question, index) {
+  const boss = bosses[activeBossIndex];
+  const correct = index === question.correct;
+  quizEls.feedback.textContent = correct ? `Correct. ${question.explain}` : `Not quite. ${question.explain}`;
+  if (correct) {
+    score += 18 + activeBossIndex * 4;
+    boss.currentHp -= 32;
+    burst(boss.x, boss.y, '#9dff72', 35);
+  } else {
+    player.health -= 14;
+    boss.currentHp += 12;
+    score = Math.max(0, score - 8);
+    burst(player.x, player.y, '#ff5b6e', 25);
+  }
+  setTimeout(() => {
+    quizModal.classList.add('hidden');
+    pausedForQuiz = false;
+    if (boss.currentHp <= 0) defeatBoss();
+  }, 1800);
+}
+
+function defeatBoss() {
+  const boss = bosses[activeBossIndex];
+  if (!boss || boss.defeated) return;
+  boss.defeated = true;
+  score += 42 + activeBossIndex * 12;
+  hud.toast.textContent = `${boss.name} got benchmarked into a footnote.`;
+  activeBossIndex += 1;
+  if (activeBossIndex >= bosses.length) endGame(true);
+  else setTimeout(() => { hud.toast.textContent = `${bosses[activeBossIndex].name}: ${bosses[activeBossIndex].taunt}`; }, 900);
+}
+
+function endGame(won) {
+  running = false;
+  gameShell.classList.add('hidden');
+  victory.classList.remove('hidden');
+  if (won) {
+    joeUnlocked = true;
+    localStorage.setItem('exitValueJoeUnlocked', 'true');
+    document.getElementById('victoryTitle').textContent = 'Exit acquired. Joe Rogun unlocked.';
+    document.getElementById('victoryText').textContent = `Final exit value: $${score.toFixed(1)}B. The bosses asked for a rematch, but your cap table has already gone supernova.`;
+  } else {
+    document.getElementById('victoryTitle').textContent = 'Runway exhausted.';
+    document.getElementById('victoryText').textContent = `Final exit value: $${score.toFixed(1)}B. The board recommends more unit tests and fewer flamethrower demos.`;
+  }
+  renderHeroCards();
+}
+
+function castRays() {
+  const rays = 180;
+  const fov = Math.PI / 3;
+  const strip = canvas.width / rays;
+  for (let i = 0; i < rays; i += 1) {
+    const angle = player.angle - fov / 2 + (i / rays) * fov;
+    let depth = 0;
+    let hit = false;
+    while (!hit && depth < 900) {
+      depth += 6;
+      const x = player.x + Math.cos(angle) * depth;
+      const y = player.y + Math.sin(angle) * depth;
+      hit = isBlocked(x, y);
+    }
+    const corrected = depth * Math.cos(angle - player.angle);
+    const height = Math.min(canvas.height, 42000 / Math.max(1, corrected));
+    const shade = Math.max(18, 210 - corrected * 0.18);
+    ctx.fillStyle = `rgb(${shade * .35}, ${shade * .55}, ${shade})`;
+    ctx.fillRect(i * strip, (canvas.height - height) / 2, strip + 1, height);
+    if (i % 9 === 0) {
+      ctx.fillStyle = `rgba(83,245,255,${Math.max(0, .3 - corrected / 2200)})`;
+      ctx.fillRect(i * strip, (canvas.height - height) / 2, 2, height);
+    }
+  }
+}
+
+function drawSprite(entity, size, label, color) {
+  const dx = entity.x - player.x;
+  const dy = entity.y - player.y;
+  const distance = Math.hypot(dx, dy);
+  const angleTo = Math.atan2(dy, dx);
+  let relative = angleTo - player.angle;
+  while (relative > Math.PI) relative -= Math.PI * 2;
+  while (relative < -Math.PI) relative += Math.PI * 2;
+  if (Math.abs(relative) > Math.PI / 2) return;
+  const screenX = canvas.width / 2 + Math.tan(relative) * canvas.width;
+  const spriteSize = Math.max(24, size * 720 / distance);
+  const y = canvas.height / 2 - spriteSize / 2;
+  const gradient = ctx.createRadialGradient(screenX, y + spriteSize / 2, spriteSize * .1, screenX, y + spriteSize / 2, spriteSize * .75);
+  gradient.addColorStop(0, color);
+  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gradient;
+  ctx.beginPath(); ctx.arc(screenX, y + spriteSize / 2, spriteSize * .78, 0, Math.PI * 2); ctx.fill();
+  ctx.font = `${Math.max(22, spriteSize * .45)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText(entity.emoji || '◆', screenX, y + spriteSize * .62);
+  ctx.font = `800 ${Math.max(12, spriteSize * .08)}px sans-serif`;
+  ctx.fillStyle = '#fff';
+  ctx.fillText(label, screenX, y - 8);
+}
+
+function render() {
+  const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  sky.addColorStop(0, '#070914'); sky.addColorStop(.48, '#17255a'); sky.addColorStop(.5, '#12091d'); sky.addColorStop(1, '#050510');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.globalAlpha = .35;
+  for (let y = canvas.height / 2; y < canvas.height; y += 24) {
+    ctx.strokeStyle = `rgba(255,79,216,${(y - canvas.height / 2) / canvas.height})`;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+  ctx.restore();
+
+  castRays();
+  bosses.forEach((boss, index) => { if (!boss.defeated && index >= activeBossIndex) drawSprite(boss, 92 + index * 10, boss.name, boss.color); });
+  bullets.forEach((bullet) => drawSprite({ ...bullet, emoji: '✦' }, 26, '', selectedHero.accent));
+  particles.forEach((p) => {
+    ctx.globalAlpha = Math.max(0, p.life / 700);
+    drawSprite({ ...p, emoji: '•' }, 14, '', p.color);
+    ctx.globalAlpha = 1;
+  });
+
+  ctx.fillStyle = 'rgba(255,255,255,.74)';
+  ctx.font = '900 22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(selectedHero.weapon, canvas.width / 2, canvas.height - 38);
+}
+
+function loop(now) {
+  const dt = Math.min(32, now - lastTime);
+  lastTime = now;
+  update(dt);
+  render();
+  if (running) requestAnimationFrame(loop);
+}
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+window.addEventListener('keydown', (event) => {
+  keys?.add(event.key.toLowerCase());
+  if (event.code === 'Space') shoot();
+});
+window.addEventListener('keyup', (event) => keys?.delete(event.key.toLowerCase()));
+window.addEventListener('resize', resizeCanvas);
+canvas.addEventListener('click', () => { canvas.requestPointerLock?.(); shoot(); });
+document.addEventListener('mousemove', (event) => {
+  if (document.pointerLockElement === canvas && running && !pausedForQuiz) player.angle += event.movementX * 0.0024;
+});
+document.getElementById('startButton').addEventListener('click', startGame);
+document.getElementById('againButton').addEventListener('click', () => { victory.classList.add('hidden'); menu.classList.remove('hidden'); });
+howButton.addEventListener('click', () => { howTo.open = !howTo.open; });
+
+renderHeroCards();
+resizeCanvas();
+
+  </script>
+</body>
+</html>
